@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-import html
 import re
 from collections import Counter
 
@@ -8,774 +5,429 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="OratorPulse — Speech Detective",
-    page_icon="🎙",
+    page_title="OratorPulse — Cartoon Writing Lab",
+    page_icon="🖤",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ============================================================
-# RUBBER-HOSE-INSPIRED CARTOON STYLING
-# CSS must remain inside this triple-quoted string.
-# ============================================================
+# ---------- Session state (set widget values BEFORE creating widgets) ----------
+defaults = {
+    "speech_text": "",
+    "example_pending": None,
+    "chat_history": [],
+}
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
+if st.session_state.example_pending is not None:
+    st.session_state.speech_text = st.session_state.example_pending
+    st.session_state.example_pending = None
+
+# ---------- Cute vintage rubber-hose visual system ----------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bowlby+One+SC&family=Fredoka:wght@400;500;600;700&family=Special+Elite&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Rye&family=Patrick+Hand&display=swap');
 
 :root {
-    --ink: #171717;
-    --cream: #f7f0df;
-    --paper: #fffaf0;
-    --red: #e94f37;
-    --teal: #62c8bd;
-    --blue: #79bce8;
-    --orange: #f49a48;
-    --muted: #675f54;
+  --paper: #f7f4eb;
+  --ink: #171717;
+  --white: #fffef9;
+  --grey: #e8e5dc;
+  --mid: #77746e;
+  --soft: #d6d2c8;
 }
-
-html, body, [data-testid="stApp"],
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] *,
-[data-testid="stSidebar"] *,
-button, input, textarea, label {
-    font-family: 'Fredoka', 'Trebuchet MS', sans-serif !important;
+html, body, [class*="css"] {
+  font-family: 'Fredoka', sans-serif;
+  color: var(--ink);
 }
-
-.stApp,
-[data-testid="stAppViewContainer"] {
-    background: var(--cream) !important;
-    color: var(--ink) !important;
+.stApp {
+  background: var(--paper);
+  color: var(--ink);
 }
-
-/* No dotted wallpaper: a clean, warm paper background */
-[data-testid="stHeader"] {
-    background: transparent !important;
-}
-
+[data-testid="stHeader"] { background: transparent; }
 .block-container {
-    max-width: 1160px;
-    padding: 2rem 2rem 4rem;
+  max-width: 1180px;
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
 }
-
-h1, h2, h3, h4 {
-    font-family: 'Bowlby One SC', 'Fredoka', sans-serif !important;
-    font-weight: 400 !important;
-    letter-spacing: .3px !important;
-    color: var(--ink) !important;
+h1, h2, h3 { color: var(--ink) !important; }
+h1 {
+  font-family: 'Rye', serif !important;
+  letter-spacing: 1px;
 }
-
-h1 { font-size: clamp(2.4rem, 5vw, 4.3rem) !important; }
-h2 { font-size: 2rem !important; }
-h3 { font-size: 1.35rem !important; }
-
-p, li, label, small, input, textarea {
-    font-family: 'Fredoka', sans-serif !important;
-}
-
-[data-testid="stSidebar"] {
-    background: #e8ded0 !important;
-    border-right: 3px solid var(--ink);
-    box-shadow: 5px 0 0 var(--ink);
-}
-
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {
-    font-family: 'Bowlby One SC', sans-serif !important;
-}
-
+p, li, label, .stCaption { color: var(--ink); }
 .hero {
-    position: relative;
-    overflow: hidden;
-    background: var(--red);
-    color: var(--paper);
-    border: 4px solid var(--ink);
-    border-radius: 48px 35px 45px 32px;
-    padding: 32px 35px;
-    box-shadow: 8px 8px 0 var(--ink);
-    margin: 10px 0 30px;
-    transform: rotate(-.25deg);
+  position: relative;
+  border: 4px solid var(--ink);
+  border-radius: 28px 28px 24px 24px;
+  padding: 28px 30px 24px;
+  background: var(--white);
+  box-shadow: 7px 7px 0 var(--ink);
+  overflow: hidden;
+  margin-bottom: 25px;
 }
-
 .hero:after {
-    content: "★";
-    position: absolute;
-    right: 28px;
-    bottom: 8px;
-    font-size: 5rem;
-    line-height: 1;
-    color: var(--orange);
-    -webkit-text-stroke: 3px var(--ink);
-    transform: rotate(12deg);
+  content: "✦";
+  position: absolute;
+  right: 25px;
+  top: 6px;
+  font-size: 58px;
+  color: var(--ink);
+  transform: rotate(12deg);
 }
-
-.hero h1 {
-    color: var(--paper) !important;
-    text-shadow: 3px 3px 0 var(--ink);
-    margin: 0 0 8px 0;
+.hero-kicker {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--grey);
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
 }
-
-.hero p {
-    color: var(--paper) !important;
-    font-size: 1.06rem;
-    max-width: 720px;
+.hero-title {
+  font-family: 'Rye', serif;
+  font-size: clamp(34px, 5vw, 58px);
+  line-height: 1.04;
+  margin: 0 0 10px;
 }
-
-.hero-label {
-    display: inline-block;
-    color: var(--ink);
-    background: var(--cream);
-    border: 3px solid var(--ink);
-    border-radius: 999px;
-    padding: 6px 13px;
-    font-family: 'Bowlby One SC', sans-serif !important;
-    font-size: .8rem;
-    margin-bottom: 13px;
-    box-shadow: 3px 3px 0 var(--ink);
+.hero-sub {
+  font-family: 'Patrick Hand', cursive;
+  font-size: 22px;
+  max-width: 750px;
+  line-height: 1.35;
 }
-
-.cartoon-card {
-    background: var(--paper);
-    color: var(--ink);
-    border: 3px solid var(--ink);
-    border-radius: 28px 22px 30px 20px;
-    padding: 22px;
-    box-shadow: 5px 6px 0 var(--ink);
-    margin: 12px 0 20px;
+.mascot {
+  float: right;
+  margin: 0 35px 4px 18px;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: white;
+  border: 4px solid var(--ink);
+  border-radius: 48% 52% 47% 53%;
+  font-size: 62px;
+  transform: rotate(5deg);
+  box-shadow: 4px 4px 0 var(--soft);
 }
-
-.card-red { background: #ffd1c7; }
-.card-teal { background: #c8eee6; }
-.card-blue { background: #d5eafa; }
-.card-cream { background: #fffaf0; }
-.card-orange { background: #ffdfbb; }
-
-.big-number {
-    font-family: 'Bowlby One SC', sans-serif !important;
-    font-size: 2.8rem;
-    line-height: 1.2;
-}
-
-.small-label {
-    font-family: 'Bowlby One SC', sans-serif !important;
-    font-size: .9rem;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-}
-
-.stButton > button,
-[data-testid="stFormSubmitButton"] > button {
-    background: var(--teal) !important;
-    color: var(--ink) !important;
-    border: 3px solid var(--ink) !important;
-    border-radius: 18px 14px 19px 13px !important;
-    min-height: 46px;
-    font-weight: 700 !important;
-    box-shadow: 4px 5px 0 var(--ink) !important;
-    transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
-}
-
-.stButton > button:hover,
-[data-testid="stFormSubmitButton"] > button:hover {
-    background: var(--orange) !important;
-    color: var(--ink) !important;
-    transform: translate(-2px, -2px) rotate(-.5deg);
-    box-shadow: 6px 7px 0 var(--ink) !important;
-    border-color: var(--ink) !important;
-}
-
-.stTextArea textarea,
-.stTextInput input,
-[data-testid="stChatInput"] textarea {
-    background: var(--paper) !important;
-    color: var(--ink) !important;
-    border: 3px solid var(--ink) !important;
-    border-radius: 20px !important;
-    box-shadow: 4px 4px 0 var(--ink) !important;
-    font-family: 'Special Elite', 'Fredoka', monospace !important;
-    font-size: 1.08rem !important;
-}
-
-[data-testid="stFileUploader"] section {
-    background: var(--paper) !important;
-    border: 3px dashed var(--ink) !important;
-    border-radius: 20px !important;
-}
-
-[data-testid="stMetric"] {
-    background: var(--paper);
-    border: 3px solid var(--ink);
-    border-radius: 23px 18px 24px 17px;
-    padding: 15px;
-    box-shadow: 4px 5px 0 var(--ink);
-}
-
-[data-testid="stMetricLabel"] {
-    font-family: 'Bowlby One SC', sans-serif !important;
-    color: var(--muted) !important;
-}
-
-[data-testid="stMetricValue"] {
-    font-family: 'Bowlby One SC', sans-serif !important;
-    color: var(--ink) !important;
-}
-
-[data-testid="stChatMessage"] {
-    background: var(--paper) !important;
-    border: 3px solid var(--ink) !important;
-    border-radius: 22px 18px 24px 17px !important;
-    box-shadow: 4px 4px 0 var(--ink) !important;
-    padding: 12px;
-    margin-bottom: 15px;
-}
-
 .stTabs [data-baseweb="tab-list"] {
-    gap: 9px;
-    background: transparent;
+  gap: 10px;
+  border-bottom: 3px solid var(--ink);
 }
-
 .stTabs [data-baseweb="tab"] {
-    background: var(--paper);
-    color: var(--ink);
-    border: 3px solid var(--ink);
-    border-radius: 16px 13px 18px 12px;
-    padding: 10px 15px;
-    font-family: 'Bowlby One SC', sans-serif !important;
-    box-shadow: 3px 3px 0 var(--ink);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  padding: 9px 18px;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
 }
-
 .stTabs [aria-selected="true"] {
-    background: var(--teal) !important;
-    color: var(--ink) !important;
+  background: var(--ink) !important;
+  color: var(--white) !important;
 }
-
-[data-testid="stExpander"],
-[data-testid="stAlert"] {
-    background: var(--paper) !important;
-    border: 3px solid var(--ink) !important;
-    border-radius: 20px !important;
-    box-shadow: 4px 4px 0 var(--ink) !important;
+.stTextArea textarea, .stTextInput input {
+  background: var(--white) !important;
+  color: var(--ink) !important;
+  border: 3px solid var(--ink) !important;
+  border-radius: 16px !important;
+  font-family: 'Patrick Hand', cursive !important;
+  font-size: 21px !important;
 }
-
-[data-testid="stProgress"] > div {
-    background: var(--paper);
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    padding: 3px;
+.stSelectbox [data-baseweb="select"] > div {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
 }
-
-[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, var(--red), var(--orange), var(--teal));
-    border-radius: 999px;
+.stButton button, .stDownloadButton button {
+  background: var(--white);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  transition: transform .12s ease, box-shadow .12s ease;
 }
-
-.pill {
-    display: inline-block;
-    background: var(--teal);
-    color: var(--ink);
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-weight: 700;
-    box-shadow: 2px 3px 0 var(--ink);
-    margin: 4px;
+.stButton button:hover, .stDownloadButton button:hover {
+  background: var(--grey);
+  color: var(--ink);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink);
+  border-color: var(--ink);
 }
-
-hr {
-    border: none;
-    border-top: 3px solid var(--ink);
-    opacity: .22;
-    margin: 26px 0;
+.stButton button:active, .stDownloadButton button:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
-
+.panel {
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  padding: 19px 20px;
+  box-shadow: 5px 5px 0 var(--ink);
+  margin: 8px 0 17px;
+}
+.panel-title {
+  font-family: 'Rye', serif;
+  font-size: 21px;
+  margin-bottom: 8px;
+}
+.metric-card {
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  padding: 16px 14px;
+  min-height: 112px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.metric-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.metric-value {
+  font-family: 'Rye', serif;
+  font-size: 31px;
+  margin-top: 5px;
+}
+.stAlert {
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+}
+hr { border-top: 2px dashed var(--soft); }
 footer { visibility: hidden; }
-
-@media (max-width: 700px) {
-    .block-container { padding: 1rem; }
-    .hero { padding: 23px; }
-    .hero:after { font-size: 3rem; right: 14px; }
-    .cartoon-card { padding: 17px; }
+#MainMenu { visibility: hidden; }
+@media (max-width: 650px) {
+ .hero { padding: 22px 18px; }
+ .mascot { width: 76px; height: 76px; font-size: 40px; margin-right: 12px; }
+ .hero-title { font-size: 34px; }
 }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ============================================================
-# TEXT ANALYSIS — transparent heuristics, not an AI detector
-# ============================================================
-
+# ---------- Analysis helpers ----------
 AI_STYLE_PHRASES = [
-    "in conclusion", "it is important to note", "delve into",
-    "furthermore", "moreover", "in today's world",
-    "plays a crucial role", "comprehensive understanding",
-    "multifaceted", "landscape of", "it is worth noting",
-    "this highlights the importance", "not only that, but also",
-    "in summary",
+    "in conclusion", "it is important to note", "delve into", "furthermore",
+    "moreover", "plays a crucial role", "in today's world", "overall",
+    "this highlights the importance", "a testament to", "multifaceted",
+    "it is worth noting", "navigate the complexities"
+]
+PERSONAL_CUES = [
+    "i think", "i feel", "i remember", "for me", "in my experience",
+    "honestly", "i learned", "i noticed", "i tried", "my friend",
+    "when i was", "i don't know", "i'm not sure"
 ]
 
-PERSONAL_MARKERS = [
-    "i think", "i feel", "i believe", "in my experience",
-    "i remember", "for me", "i learned", "i noticed",
-    "my friend", "my family", "i tried", "i made a mistake",
-    "i was", "i did", "i wanted", "i realized",
-]
-
-
-def split_sentences(text: str) -> list[str]:
-    return [
-        part.strip()
-        for part in re.split(r"(?<=[.!?؟])\s+|\n+", text)
-        if part.strip()
-    ]
-
-
-def analyze_text(text: str) -> dict:
-    clean = text.strip()
-    words = re.findall(r"\b[\w'-]+\b", clean.lower())
-    sentences = split_sentences(clean)
-
-    if not words:
-        return {
-            "word_count": 0,
-            "sentence_count": 0,
-            "avg_sentence": 0,
-            "ai_markers": [],
-            "human_markers": [],
-            "repeated_words": [],
-            "score": 0,
-            "assessment": "No text yet",
-            "explanation": "Paste some text first.",
-            "limitations": [],
-        }
-
-    counts = Counter(words)
-    repeated = [
-        (word, count)
-        for word, count in counts.most_common()
-        if len(word) > 4 and count >= 3
-    ][:6]
-
-    avg_sentence = len(words) / max(len(sentences), 1)
-    lower = clean.lower()
-    ai_found = [phrase for phrase in AI_STYLE_PHRASES if phrase in lower]
-    personal_found = [phrase for phrase in PERSONAL_MARKERS if phrase in lower]
-
-    # Style indicator only. This is not a probability of AI authorship.
+def analyze_text(text):
+    text = text.strip()
+    if not text:
+        return None
+    words = re.findall(r"\b[\w’'-]+\b", text.lower())
+    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()]
+    word_count = len(words)
+    sentence_count = max(len(sentences), 1)
+    avg_sentence = word_count / sentence_count
+    unique_ratio = len(set(words)) / max(word_count, 1)
+    phrase_hits = [p for p in AI_STYLE_PHRASES if p in text.lower()]
+    personal_hits = [p for p in PERSONAL_CUES if p in text.lower()]
+    repeated = [(w, c) for w, c in Counter(words).most_common()
+                if c >= 4 and len(w) > 3 and w not in {"that", "this", "with", "from", "have", "there", "about"}]
+    punctuation = sum(text.count(x) for x in ["!", "?", "—", "..."])
     score = 50
-    score += min(len(ai_found) * 7, 28)
-    score += min(len(repeated) * 3, 12)
-
+    score += min(len(phrase_hits) * 6, 24)
+    score -= min(len(personal_hits) * 5, 20)
     if avg_sentence > 28:
         score += 8
-    if len(sentences) >= 4 and avg_sentence < 8:
+    elif avg_sentence < 10:
+        score -= 4
+    if unique_ratio < 0.42 and word_count > 40:
         score += 5
-
-    score -= min(len(personal_found) * 5, 25)
+    if punctuation >= 4:
+        score -= 2
     score = max(0, min(100, score))
-
-    if len(words) < 80:
-        assessment = "Too little text"
-        explanation = (
-            "This sample is short, so there are too few signals for a meaningful "
-            "style assessment."
-        )
-    elif score >= 65:
-        assessment = "More formulaic signals"
-        explanation = (
-            "Some formulaic phrases or repetition appear in this text. They can "
-            "occur in AI-assisted writing, but also in human writing."
-        )
-    elif score <= 35:
-        assessment = "More personal-style signals"
-        explanation = (
-            "The text includes personal phrasing or fewer of the formulaic patterns "
-            "checked here. This does not prove a human wrote it."
-        )
-    else:
-        assessment = "Mixed signals"
-        explanation = (
-            "The text contains a mixture of writing-style signals. This analysis "
-            "cannot reliably identify its author."
-        )
-
     return {
-        "word_count": len(words),
-        "sentence_count": len(sentences),
+        "words": word_count,
+        "sentences": sentence_count,
         "avg_sentence": round(avg_sentence, 1),
-        "ai_markers": ai_found,
-        "human_markers": personal_found,
-        "repeated_words": repeated,
+        "unique_ratio": round(unique_ratio * 100),
+        "phrase_hits": phrase_hits,
+        "personal_hits": personal_hits,
+        "repeated": repeated[:8],
         "score": score,
-        "assessment": assessment,
-        "explanation": explanation,
-        "limitations": [
-            "This score is a rule-based style indicator, not the probability that AI wrote the text.",
-            "Human writing can sound formulaic, and AI-assisted writing can sound personal.",
-            "Editing, translation, topic, and text length can affect these signals.",
-        ],
     }
 
-
-def answer_question(question: str, text: str, result: dict) -> str:
-    q = question.lower()
-
-    if not text.strip():
-        return "Paste a text in the Analyze tab first, and I'll help you inspect it."
-
-    if any(term in q for term in ["ai", "human", "written", "author", "انسان", "ذكاء"]):
-        return (
-            f"My style check says: **{result['assessment']}**. "
-            f"{result['explanation']} This is not proof of authorship."
-        )
-
-    if any(term in q for term in ["repeat", "repetition", "repeated", "تكرار"]):
-        if result["repeated_words"]:
-            items = ", ".join(
-                f"**{word}** ({count} times)"
-                for word, count in result["repeated_words"]
-            )
-            return (
-                f"I found some words repeated at least three times: {items}. "
-                "Repeated words are not automatically a problem. Check whether "
-                "they help your point or make the writing repetitive."
-            )
-        return "I didn't find longer words repeated three or more times."
-
-    if any(term in q for term in ["sentence", "length", "long", "جمل"]):
-        return (
-            f"The text has **{result['sentence_count']} sentences** and about "
-            f"**{result['avg_sentence']} words per sentence** on average. "
-            "Mixing shorter and longer sentences can create a more natural rhythm."
-        )
-
-    if any(term in q for term in ["improve", "rewrite", "natural", "better", "تحسين"]):
-        return (
-            "To improve the writing, use specific examples, vary sentence openings, "
-            "remove repeated ideas, and include details that are genuinely yours. "
-            "Don't invent personal experiences."
-        )
-
-    if any(term in q for term in ["why", "explain", "reason", "سبب"]):
-        if result["ai_markers"]:
-            phrases = ", ".join(f"**{phrase}**" for phrase in result["ai_markers"])
-            return (
-                f"Some formulaic phrases I noticed are: {phrases}. These are common "
-                "expressions, not proof of AI authorship. " + result["explanation"]
-            )
-        return (
-            "I didn't find the specific formulaic phrases this simple check looks for. "
-            "That doesn't prove who wrote the text. " + result["explanation"]
-        )
-
-    return (
-        f"The sample has **{result['word_count']} words**, "
-        f"**{result['sentence_count']} sentences**, and an average of "
-        f"**{result['avg_sentence']} words per sentence**. "
-        f"My style assessment is **{result['assessment']}**. "
-        "Ask about repetition, sentence length, writing style, or clarity."
+def metric(label, value, note=""):
+    st.markdown(
+        f'<div class="metric-card"><div class="metric-label">{label}</div>'
+        f'<div class="metric-value">{value}</div><div style="font-size:13px;color:#555;margin-top:4px">{note}</div></div>',
+        unsafe_allow_html=True
     )
 
-
-# ============================================================
-# SESSION STATE
-# ============================================================
-
-if "speech_text" not in st.session_state:
-    st.session_state.speech_text = ""
-
-if "messages" not in st.session_state:
-    st.session_state.messages = [{
-        "role": "assistant",
-        "content": (
-            "Hello, detective! Paste a text in Analyze and ask me what stands out. "
-            "I'll explain the clues without pretending I can prove who wrote it."
-        ),
-    }]
-
-if "analysis_requested" not in st.session_state:
-    st.session_state.analysis_requested = False
-
-if "example_pending" not in st.session_state:
-    st.session_state.example_pending = None
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
-with st.sidebar:
-    st.markdown("## ORATORPULSE")
-    st.caption("THE SPEECH & WRITING DETECTIVE")
-    st.markdown("---")
-    st.markdown("### YOUR WORKSPACE")
-    st.write("Inspect writing style, spot repetition, and explore how your text reads.")
-
-    if st.button("START FRESH", use_container_width=True):
-        st.session_state.example_pending = ""
-        st.session_state.analysis_requested = False
-        st.session_state.messages = [{
-            "role": "assistant",
-            "content": "Fresh start! Paste a text in Analyze and let's inspect it.",
-        }]
-        st.rerun()
-
-    st.markdown("---")
-    st.markdown("### IMPORT TEXT")
-    uploaded = st.file_uploader(
-        "Upload a TXT or CSV file",
-        type=["txt", "csv"],
-        help="TXT loads as text. CSV loads the first column as text.",
-    )
-
-    if uploaded is not None:
-        try:
-            if uploaded.name.lower().endswith(".txt"):
-                imported_text = uploaded.getvalue().decode("utf-8", errors="replace")
-            else:
-                data = pd.read_csv(uploaded)
-                imported_text = (
-                    "\n".join(data.iloc[:, 0].dropna().astype(str).tolist())
-                    if not data.empty else ""
-                )
-
-            if imported_text.strip():
-                st.session_state.example_pending = imported_text
-                st.session_state.analysis_requested = False
-                st.success("Text imported! It will appear in the editor.")
-                st.rerun()
-        except Exception as exc:
-            st.error(f"Couldn't read this file: {exc}")
-
-    st.markdown("---")
-    st.caption("Audio transcription is not enabled in this demo.")
-
-
-# ============================================================
-# HEADER
-# ============================================================
-
+# ---------- Header ----------
 st.markdown("""
 <div class="hero">
-    <div class="hero-label">CASE FILE #001 · EST. 1930-SOMETHING</div>
-    <h1>OratorPulse</h1>
-    <p>Your playful detective for speech and writing style.</p>
-    <p>Spot patterns. Understand the clues. Keep the human in the loop.</p>
+  <div class="mascot" aria-label="cute cartoon mascot">☺</div>
+  <div class="hero-kicker">✦ THE LITTLE WRITING DETECTIVE ✦</div>
+  <div class="hero-title">OratorPulse</div>
+  <div class="hero-sub">A cute old-cartoon lab for exploring writing patterns. Big smiles, bendy lines, black ink, paper-white panels — zero spooky vibes.</div>
 </div>
 """, unsafe_allow_html=True)
 
-tab_analyze, tab_chat, tab_about = st.tabs([
-    "ANALYZE",
-    "THE DETECTIVE",
-    "HOW IT WORKS",
-])
-
-
-# ============================================================
-# ANALYSIS TAB
-# ============================================================
+tab_analyze, tab_detective, tab_about = st.tabs(["✍️  Text Lab", "🔎  Pattern Detective", "🎞️  Behind the Cartoon"])
 
 with tab_analyze:
-    st.markdown("## DROP YOUR TEXT HERE")
-    st.write("An essay, a paragraph, or a speech draft. Let's inspect the clues.")
-
-    example_text = (
-        "I remember the first time I tried to explain my idea to a friend. "
-        "I was nervous, and I kept repeating the same point. After a while, "
-        "I realized that a simple example made the idea much easier to understand."
-    )
-
-    # IMPORTANT: set the widget value before creating the text_area.
-    if st.session_state.example_pending is not None:
-        st.session_state.speech_text = st.session_state.example_pending
-        st.session_state.example_pending = None
-
-    text_input = st.text_area(
-        "Text to inspect",
-        key="speech_text",
-        height=230,
-        placeholder="Paste your speech or writing here...",
-        label_visibility="collapsed",
-    )
-
-    col_a, col_b = st.columns(2)
-
-    with col_a:
-        analyze_clicked = st.button("INSPECT MY TEXT", use_container_width=True)
-
-    with col_b:
-        example_clicked = st.button("TRY AN EXAMPLE", use_container_width=True)
-
-    if example_clicked:
-        st.session_state.example_pending = example_text
-        st.session_state.analysis_requested = False
-        st.rerun()
+    left, right = st.columns([1.35, 0.85], gap="large")
+    with left:
+        st.markdown('<div class="panel-title">Drop your writing here!</div>', unsafe_allow_html=True)
+        st.caption("Paste a paragraph, an essay, a post, or a sample you want to inspect.")
+        text_value = st.text_area(
+            "Your text",
+            key="speech_text",
+            height=260,
+            placeholder="Once upon a time, I had an idea..."
+            , label_visibility="collapsed"
+        )
+        b1, b2 = st.columns(2)
+        with b1:
+            analyze_clicked = st.button("✨ ANALYZE MY TEXT", use_container_width=True, type="primary")
+        with b2:
+            if st.button("🎈 TRY A CUTE EXAMPLE", use_container_width=True):
+                st.session_state.example_pending = (
+                    "Honestly, I wasn't sure how to start this project. I tried a few ideas, "
+                    "made mistakes, and changed my plan. I think the most useful thing I learned "
+                    "was to test one small part at a time instead of trying to make everything perfect."
+                )
+                st.rerun()
+        if st.button("🧽 START FRESH", use_container_width=True):
+            st.session_state.example_pending = ""
+            st.rerun()
+    with right:
+        st.markdown("""
+        <div class="panel">
+          <div class="panel-title">Meet Pip!</div>
+          <div style="font-size:64px;text-align:center;line-height:1.2">◕‿◕</div>
+          <p style="font-family:'Patrick Hand',cursive;font-size:21px;text-align:center">
+          “I look for patterns, not people to accuse!”
+          </p>
+          <hr>
+          <b>What this lab checks</b>
+          <ul>
+            <li>Sentence length and variety</li>
+            <li>Common polished-sounding phrases</li>
+            <li>Personal-sounding language</li>
+            <li>Repeated words and expressions</li>
+          </ul>
+        </div>
+        """, unsafe_allow_html=True)
 
     if analyze_clicked:
-        st.session_state.analysis_requested = True
-
-    if st.session_state.analysis_requested:
-        result = analyze_text(text_input)
-
-        if result["word_count"] == 0:
-            st.warning("Paste a little text first, detective!")
+        result = analyze_text(text_value)
+        if not result:
+            st.warning("Psst! Paste some text first, then I'll take a look.")
         else:
-            st.markdown("---")
-            st.markdown("## WHAT THE CLUES SAY")
+            st.markdown("## 🎉 Your text report")
+            cols = st.columns(4)
+            with cols[0]: metric("Words", result["words"])
+            with cols[1]: metric("Sentences", result["sentences"])
+            with cols[2]: metric("Avg. sentence", result["avg_sentence"], "words")
+            with cols[3]: metric("Vocabulary variety", f'{result["unique_ratio"]}%', "unique words")
 
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.markdown(f"""
-                <div class="cartoon-card card-red">
-                    <div class="small-label">WORD COUNT</div>
-                    <div class="big-number">{result['word_count']}</div>
-                    <div>Words in this sample</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col2:
-                st.markdown(f"""
-                <div class="cartoon-card card-teal">
-                    <div class="small-label">SENTENCES</div>
-                    <div class="big-number">{result['sentence_count']}</div>
-                    <div>Average: {result['avg_sentence']} words</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col3:
-                signal_count = len(result["ai_markers"]) + len(result["human_markers"])
-                st.markdown(f"""
-                <div class="cartoon-card card-blue">
-                    <div class="small-label">STYLE CLUES</div>
-                    <div class="big-number">{signal_count}</div>
-                    <div>Patterns spotted by the demo</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown("### DOES IT SOUND AI-WRITTEN?")
-            st.markdown(f"""
-            <div class="cartoon-card">
-                <div class="hero-label">STYLE CHECK — NOT A VERDICT</div>
-                <h2>{html.escape(result['assessment'])}</h2>
-                <p>{html.escape(result['explanation'])}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            st.caption(
-                f"Experimental formulaic-style indicator: {result['score']}/100. "
-                "This is NOT the probability that AI wrote the text."
-            )
-            st.progress(result["score"] / 100)
-
-            left, right = st.columns(2)
-
-            with left:
-                st.markdown(
-                    '<div class="cartoon-card card-red"><h3>FORMULAIC PHRASES</h3>',
-                    unsafe_allow_html=True,
-                )
-                if result["ai_markers"]:
-                    for phrase in result["ai_markers"]:
-                        st.markdown(f"- “{phrase}”")
-                else:
-                    st.write("No checked phrases found.")
-                st.markdown(
-                    "<small>These phrases can also be used naturally by people.</small></div>",
-                    unsafe_allow_html=True,
-                )
-
-            with right:
-                st.markdown(
-                    '<div class="cartoon-card card-teal"><h3>PERSONAL-STYLE CLUES</h3>',
-                    unsafe_allow_html=True,
-                )
-                if result["human_markers"]:
-                    for phrase in result["human_markers"]:
-                        st.markdown(f"- “{phrase}”")
-                else:
-                    st.write("No checked personal phrases found.")
-                st.markdown(
-                    "<small>Personal wording does not prove human authorship.</small></div>",
-                    unsafe_allow_html=True,
-                )
-
-            st.markdown("### REPETITION RADAR")
-            if result["repeated_words"]:
-                for word, count in result["repeated_words"]:
-                    st.markdown(
-                        f'<span class="pill">{html.escape(word)} × {count}</span>',
-                        unsafe_allow_html=True,
-                    )
+            st.markdown('<div class="panel"><div class="panel-title">The pattern-o-meter</div>', unsafe_allow_html=True)
+            st.progress(result["score"])
+            if result["score"] >= 65:
+                st.write(f'**Pattern score: {result["score"]}/100** — this sample contains several patterns often associated with polished, formulaic writing.')
+            elif result["score"] <= 40:
+                st.write(f'**Pattern score: {result["score"]}/100** — this sample contains some conversational or personal-language cues.')
             else:
-                st.write("No longer words were repeated three or more times.")
+                st.write(f'**Pattern score: {result["score"]}/100** — this sample has a mix of patterns.')
+            st.caption("Important: this is a rough style indicator, NOT an AI detector. It cannot reliably determine who or what wrote the text.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            with st.expander("LIMITS OF THIS ANALYSIS"):
-                for limitation in result["limitations"]:
-                    st.write(f"• {limitation}")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown('<div class="panel"><div class="panel-title">🪄 Polished phrase clues</div>', unsafe_allow_html=True)
+                if result["phrase_hits"]:
+                    for phrase in result["phrase_hits"]:
+                        st.write(f"• “{phrase}”")
+                else:
+                    st.write("No phrases from the small built-in list were found.")
+                st.markdown("</div>", unsafe_allow_html=True)
+            with c2:
+                st.markdown('<div class="panel"><div class="panel-title">💛 Personal voice clues</div>', unsafe_allow_html=True)
+                if result["personal_hits"]:
+                    for phrase in result["personal_hits"]:
+                        st.write(f"• “{phrase}”")
+                else:
+                    st.write("No phrases from the small personal-language list were found.")
+                st.markdown("</div>", unsafe_allow_html=True)
 
-            st.info(
-                "This demo uses transparent text rules, not a trained AI detector. "
-                "It does not analyze voice tone, pitch, pauses, or audio."
+            if result["repeated"]:
+                st.markdown('<div class="panel"><div class="panel-title">🔁 Words that repeat</div>', unsafe_allow_html=True)
+                st.write(", ".join(f"**{word}** ({count}×)" for word, count in result["repeated"]))
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            report = (
+                "ORATORPULSE TEXT REPORT\n"
+                f'Words: {result["words"]}\nSentences: {result["sentences"]}\n'
+                f'Average sentence length: {result["avg_sentence"]}\n'
+                f'Vocabulary variety: {result["unique_ratio"]}%\n'
+                f'Pattern score (not AI probability): {result["score"]}/100\n'
+                f'Polished phrase clues: {", ".join(result["phrase_hits"]) or "None"}\n'
+                f'Personal voice clues: {", ".join(result["personal_hits"]) or "None"}\n'
             )
+            st.download_button("⬇️ SAVE REPORT AS TXT", report, file_name="oratorpulse_report.txt")
 
-
-# ============================================================
-# CHAT TAB
-# ============================================================
-
-with tab_chat:
-    st.markdown("## ASK THE DETECTIVE")
-    st.write("Ask a question about the text you've inspected.")
-
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    prompt = st.chat_input("Why does it sound formulaic? How can I improve it?")
-
-    if prompt:
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        result = analyze_text(st.session_state.speech_text)
-        response = answer_question(prompt, st.session_state.speech_text, result)
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        st.rerun()
-
-
-# ============================================================
-# ABOUT TAB
-# ============================================================
+with tab_detective:
+    st.markdown('<div class="panel-title">🔎 The Repeat-O-Scope</div>', unsafe_allow_html=True)
+    st.write("Upload a CSV or TXT file and Pip will help inspect the text. For a CSV, choose the column containing the writing.")
+    uploaded = st.file_uploader("Choose a CSV or TXT file", type=["csv", "txt"])
+    if uploaded:
+        try:
+            if uploaded.name.lower().endswith(".csv"):
+                df = pd.read_csv(uploaded)
+                st.dataframe(df.head(8), use_container_width=True)
+                column = st.selectbox("Which column contains the text?", df.columns.tolist())
+                combined = "\n".join(df[column].dropna().astype(str).tolist())
+            else:
+                combined = uploaded.getvalue().decode("utf-8", errors="replace")
+            if st.button("🕵️ INSPECT FILE"):
+                result = analyze_text(combined)
+                if result:
+                    st.success(f'Inspected {result["words"]} words across {result["sentences"]} sentences.')
+                    st.write(f'Pattern score: **{result["score"]}/100** (not AI probability)')
+                    if result["repeated"]:
+                        st.write("Repeated words:", ", ".join(f"{w} ({c}×)" for w, c in result["repeated"]))
+                    else:
+                        st.write("No strong repeated-word patterns found.")
+                else:
+                    st.info("This file doesn't seem to contain text yet.")
+        except Exception as exc:
+            st.error(f"Couldn't read that file: {exc}")
 
 with tab_about:
-    st.markdown("## MEET YOUR DETECTIVE")
-
     st.markdown("""
-    <div class="cartoon-card card-cream">
-        <h2>A CLUE FINDER, NOT A JUDGE.</h2>
-        OratorPulse checks repeated words, sentence length, selected formulaic
-        phrases, and personal-style expressions. It explains the patterns it
-        finds in simple language.
+    <div class="panel">
+      <div class="panel-title">🎞️ How the little lab works</div>
+      <p>This app uses a small set of transparent text rules. It counts words and sentences, checks for a short list of phrases, and notices a few personal-language cues.</p>
+      <p><b>It does not connect to an AI model</b>, and it does not prove whether a human or AI wrote a passage. Human writing can sound formal; AI writing can sound personal. Treat the report as a writing-style checklist only.</p>
+      <hr>
+      <div class="panel-title">🖤 The visual recipe</div>
+      <p>Original cute rubber-hose-inspired design: rounded silhouettes, simple smiling mascot, thick ink outlines, cream paper, black-and-white contrast, hand-drawn energy, and playful vintage typography. No villain mood, no yellow dots, no copied Bendy character.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="cartoon-card card-red">
-        <h3>WHAT THIS DEMO CAN DO</h3>
-        - Inspect pasted text and imported TXT or CSV files
-        - Find repeated words and selected writing patterns
-        - Explain why a text may sound formulaic
-        - Suggest ways to improve clarity and variation
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="cartoon-card card-teal">
-        <h3>WHAT'S NOT CONNECTED YET</h3>
-        - No external AI model or live chatbot API
-        - No speech-to-text transcription
-        - No acoustic analysis of pitch, pauses, or voice
-        - No reliable proof of whether a person or AI wrote a text
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.caption("OratorPulse Demo — Speech & Writing Style Detective")
+st.markdown("""
+<hr>
+<div style="text-align:center;font-family:'Patrick Hand',cursive;font-size:18px">
+Made with a little ink, a little bounce, and a whole lot of curiosity. ✦
+</div>
+""", unsafe_allow_html=True)
