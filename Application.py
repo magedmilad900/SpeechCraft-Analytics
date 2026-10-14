@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import html
@@ -24,7 +23,7 @@ st.markdown("""
     --ink: #171326;
     --purple: #9857ff;
     --pink: #ff5ca8;
-    --yellow: #fff05a;
+    --green: #d6ff76;
     --cyan: #42f5ed;
     --paper: #fffdf5;
 }
@@ -69,7 +68,7 @@ p, li, label, input, textarea, small {
 }
 
 [data-testid="stSidebar"] {
-    background: var(--yellow);
+    background: var(--green);
     border-right: 4px solid var(--ink);
     box-shadow: 6px 0 0 var(--ink);
 }
@@ -91,7 +90,7 @@ p, li, label, input, textarea, small {
     position: absolute;
     right: 22px;
     top: 16px;
-    color: var(--yellow);
+    color: var(--green);
     font-family: 'Bangers', cursive;
     font-size: 2rem;
     -webkit-text-stroke: 1px var(--ink);
@@ -112,7 +111,7 @@ p, li, label, input, textarea, small {
 
 .sticker {
     display: inline-block;
-    background: var(--yellow);
+    background: var(--green);
     color: var(--ink);
     padding: 7px 14px;
     border: 3px solid var(--ink);
@@ -134,7 +133,7 @@ p, li, label, input, textarea, small {
     margin: 12px 0 22px;
 }
 
-.yellow-card { background: var(--yellow); }
+.green-card { background: var(--green); }
 .pink-card { background: #ffb4d2; }
 .blue-card { background: #a7f7f4; }
 .purple-card { background: #d7bdff; }
@@ -154,7 +153,7 @@ p, li, label, input, textarea, small {
 
 .stButton > button,
 [data-testid="stFormSubmitButton"] > button {
-    background: var(--yellow);
+    background: var(--green);
     color: var(--ink);
     border: 3px solid var(--ink);
     border-radius: 15px;
@@ -192,7 +191,7 @@ p, li, label, input, textarea, small {
 }
 
 [data-testid="stMetric"] {
-    background: var(--yellow);
+    background: var(--green);
     border: 3px solid var(--ink);
     border-radius: 19px;
     padding: 15px;
@@ -228,7 +227,7 @@ p, li, label, input, textarea, small {
 }
 
 .stTabs [aria-selected="true"] {
-    background: var(--yellow) !important;
+    background: var(--green) !important;
     color: var(--ink) !important;
 }
 
@@ -350,7 +349,6 @@ def analyze_text(text: str) -> dict:
     ai_found = [p for p in AI_STYLE_PHRASES if p in lower]
     personal_found = [p for p in PERSONAL_MARKERS if p in lower]
 
-    # A simple style heuristic, not a probability of AI authorship.
     score = 50
     score += min(len(ai_found) * 7, 28)
     score += min(len(repeated) * 3, 12)
@@ -614,7 +612,7 @@ with tab_analyze:
 
             with c1:
                 st.markdown(f"""
-                <div class="cartoon-card yellow-card">
+                <div class="cartoon-card green-card">
                     <div class="small-label">WORD COUNT</div>
                     <div class="big-number">{result['word_count']}</div>
                     <div>Words in this sample</div>
@@ -751,7 +749,7 @@ with tab_about:
     st.markdown("## MEET YOUR DETECTIVE")
 
     st.markdown("""
-    <div class="cartoon-card yellow-card">
+    <div class="cartoon-card green-card">
         <h2>A CLUE FINDER, NOT A JUDGE.</h2>
         OratorPulse checks repeated words, sentence length, selected formulaic
         phrases, and personal-style expressions. It explains the patterns it
