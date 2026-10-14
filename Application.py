@@ -10,20 +10,86 @@ st.set_page_config(page_title="OratorPulse — Contrastive Speech Analytics", pa
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;500;600;700&family=Patrick+Hand&display=swap');
-html, body, [data-testid="stAppViewContainer"], button, input, textarea, label, [data-testid="stDataFrame"] * { font-family:'Fredoka','Comic Sans MS',cursive !important; }
-[data-testid="stSidebar"], .brand-name, .brand-sub, .side-link, .topline { font-family:'Fredoka','Comic Sans MS',cursive !important; }
-h1, h2, h3, h4, [data-testid="stMetricValue"] { font-family:'Bangers','Fredoka','Comic Sans MS',cursive !important; font-weight:400 !important; letter-spacing:.02em; }
-.block-container { padding: 2.5rem 2rem 4rem; max-width: 980px; }
-.topline { display:flex; justify-content:space-between; align-items:center; color:#777; font-size:.78rem; margin-bottom:2rem; }
-.story { max-width:620px; margin:1rem auto 1.8rem; text-align:center; color:#555; line-height:1.6; font-size:1.05rem; }
-.stApp, [data-testid="stAppViewContainer"] { background:#fff8e8; color:#191919; }
-[data-testid="stSidebar"] { background:#ffe9c7; border-right:2px solid #191919; box-shadow:5px 0 0 #191919; }
-.stButton > button { border:2px solid #191919; border-radius:14px; background:#8fd3ff; color:#191919; font-weight:700; box-shadow:4px 5px 0 #191919; }
-.stButton > button:hover { background:#ffcf56; transform:translate(-2px,-2px) rotate(-1deg); box-shadow:6px 7px 0 #191919; }
-[data-testid="stMetric"] { border:2px solid #191919; border-radius:16px; background:#fff; padding:.8rem; box-shadow:3px 4px 0 #191919; }
-[data-testid="stDataFrame"] { border:2px solid #191919; border-radius:16px; overflow:hidden; box-shadow:4px 5px 0 #191919; background:#fff; }
-[data-testid="stChatMessage"] { border:2px solid #191919; background:#fffef8; box-shadow:3px 4px 0 #191919; }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+html, body, [data-testid="stAppViewContainer"], button, input, textarea, label, [data-testid="stDataFrame"] * {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.stApp {
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+[data-testid="stSidebar"] {
+    background: #1e293b;
+    border-right: 1px solid #334155;
+}
+
+.topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #334155;
+    margin-bottom: 2rem;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.story {
+    max-width: 650px;
+    margin: 0 auto 2.5rem auto;
+    text-align: center;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.stButton > button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+[data-testid="stMetric"] {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+[data-testid="stDataFrame"] {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #334155;
+}
+
+[data-testid="stChatMessage"] {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -51,7 +117,7 @@ with st.sidebar:
 
 # Main Header
 st.markdown('<div class="topline"><span>Track C: Contrastive Speech Analytics & Temporal Flaw Grounding</span><span>Hackathon 2026</span></div>', unsafe_allow_html=True)
-st.markdown("<h1 style='text-align: center;'>OratorPulse Speech Evaluation</h1>", unsafe_allow_html=True)
+st.markdown('<div class="hero-title">OratorPulse Speech Evaluation</div>', unsafe_allow_html=True)
 st.markdown('<div class="story">Comparing ideal vs. flawed speeches, grounding temporal flaws with high precision, and generating reproducible rubric-based scores.</div>', unsafe_allow_html=True)
 
 # Metrics
