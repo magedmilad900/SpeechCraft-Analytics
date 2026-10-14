@@ -1,164 +1,265 @@
 from __future__ import annotations
 
-import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
-st.set_page_config(page_title="OratorPulse — Speech Analytics", page_icon="🎙️", layout="wide")
+st.set_page_config(page_title="OratorPulse — Cartoon Speech Studio", page_icon="🎙️", layout="wide")
 
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600;700&family=Patrick+Hand&display=swap');
 
-html, body, [data-testid="stAppViewContainer"], button, input, textarea, label, [data-testid="stDataFrame"] * {
-    font-family: 'Cairo', 'Inter', sans-serif !important;
+html, body, [data-testid="stAppViewContainer"], button, input, textarea, label {
+    font-family: 'Fredoka', 'Comic Sans MS', cursive !important;
 }
 
 .stApp {
-    background: #f8fafc;
-    color: #1e293b;
+    background: #fff8e8;
+    color: #191919;
+}
+
+/* خلفية منقطة كارتونية */
+[data-testid="stAppViewContainer"]:before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image: radial-gradient(#f28c8c 2px, transparent 2px), radial-gradient(#8fd3ff 2px, transparent 2px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
 }
 
 [data-testid="stSidebar"] {
-    background: #ffffff;
-    border-left: 1px solid #e2e8f0;
+    background: #ffe9c7;
+    border-right: 3px solid #191919;
+    box-shadow: 6px 0 0 #191919;
 }
 
-.topline {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #64748b;
-    font-size: 0.85rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid #e2e8f0;
+h1, h2, h3 {
+    font-family: 'Bangers', cursive !important;
+    letter-spacing: 0.03em;
+    color: #191919;
+}
+
+.hero-card {
+    border: 3px solid #191919;
+    border-radius: 24px;
+    background: #8fd3ff;
+    padding: 2rem;
+    box-shadow: 6px 7px 0 #191919;
+    text-align: center;
     margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
 }
 
-.hero-title {
-    font-size: 2.5rem;
+.hero-card h1 {
+    font-size: 3rem;
+    margin: 0 0 0.5rem 0;
+    color: #191919;
+}
+
+.hero-card p {
+    font-family: 'Patrick Hand', cursive !important;
+    font-size: 1.25rem;
+    color: #191919;
+    margin: 0;
+}
+
+.fun-box {
+    border: 3px solid #191919;
+    border-radius: 20px;
+    background: #ffffff;
+    padding: 1.5rem;
+    box-shadow: 5px 6px 0 #191919;
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.fun-box:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 8px 9px 0 #191919;
+}
+
+.badge-ideal {
+    background: #bbf7d0;
+    border: 2px solid #191919;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
     font-weight: 700;
-    color: #0f172a;
-    text-align: center;
-    margin-bottom: 0.5rem;
+    color: #166534;
+    display: inline-block;
 }
 
-.story {
-    max-width: 700px;
-    margin: 0 auto 2.5rem auto;
-    text-align: center;
-    color: #475569;
-    font-size: 1.05rem;
-    line-height: 1.7;
+.badge-flawed {
+    background: #fecaca;
+    border: 2px solid #191919;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #991b1b;
+    display: inline-block;
 }
 
 .stButton > button {
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
+    border: 3px solid #191919;
+    border-radius: 16px;
+    background: #ffcf56;
+    color: #191919;
+    font-weight: 700;
+    font-size: 1.1rem;
     padding: 0.6rem 1.2rem;
-    transition: all 0.2s ease;
-    width: 100%;
+    box-shadow: 4px 5px 0 #191919;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .stButton > button:hover {
-    background: #1d4ed8;
-    color: white;
+    background: #f28c8c;
+    color: #191919;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 7px 0 #191919;
 }
 
 [data-testid="stMetric"] {
+    border: 3px solid #191919;
+    border-radius: 18px;
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.2rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-}
-
-[data-testid="stDataFrame"] {
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid #e2e8f0;
-    background: #ffffff;
+    padding: 1rem;
+    box-shadow: 4px 5px 0 #191919;
 }
 
 [data-testid="stChatMessage"] {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    border: 3px solid #191919;
+    border-radius: 18px;
+    background: #fffef8;
+    box-shadow: 4px 5px 0 #191919;
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-def get_contrastive_data() -> pd.DataFrame:
-    data = [
-        ["Sample_01", "Ideal", "Technical Pitch", "1.25", "145 WPM", "0.2s", "98%", "سرعة ونبرة صوت مثالية بدون كلمات حشوية."],
-        ["Sample_02", "Flawed", "Technical Pitch", "2.10", "190 WPM", "1.8s", "62%", "سرعة مفرطة وتوقفات متكررة غير مقصودة."],
-        ["Sample_03", "Ideal", "Quarterly Review", "0.95", "130 WPM", "0.1s", "95%", "تركيز عالٍ وتوزيع ممتاز لفترات التوقف الزمنية."],
-        ["Sample_04", "Flawed", "Quarterly Review", "3.40", "110 WPM", "2.5s", "58%", "بطء شديد وتلعثم ملحوظ في المصطلحات المالية."],
-        ["Sample_05", "Ideal", "Product Launch", "1.10", "140 WPM", "0.3s", "96%", "إيقاع حماسي واستقرار تامة في نبرة الصوت."],
-    ]
-    return pd.DataFrame(data, columns=["معرف العينة", "النوع", "السياق", "Jitter", "سرعة الإلقاء", "الفجوة الزمنية", "التقييم المعياري", "ملاحظات التحليل"])
-
-# القائمة الجانبية
+# القائمة الجانبية الكارتونية
 with st.sidebar:
-    st.markdown("### 🎙️ OratorPulse")
-    st.caption("مسار C · تحليلات النطق المتقدمة")
-    if st.button("＋ جلسة تحليل جديدة"):
+    st.markdown("### 🎙️ OratorPulse Studio")
+    st.caption("Track C · Contrastive Speech Magic")
+    if st.button("✨ New Session", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
     st.divider()
-    st.file_uploader("رفع ملف صوتي أو بيانات CSV", type=["wav", "mp3", "csv"])
+    st.markdown("<b>🎨 Cartoon Themes</b>", unsafe_allow_html=True)
+    theme_choice = st.radio("Choose Vibe:", ["Sunny Yellow", "Bubblegum Blue", "Minty Fresh"], label_visibility="collapsed")
+    st.divider()
+    st.file_uploader("📂 Drop Audio / Speech File", type=["wav", "mp3", "csv"])
 
-# العنوان الرئيسي
-st.markdown('<div class="topline"><span>Track C: Contrastive Speech Analytics & Temporal Flaw Grounding</span><span>Hackathon 2026</span></div>', unsafe_allow_html=True)
-st.markdown('<div class="hero-title">نظام تقييم وتحليل الخطابات OratorPulse</div>', unsafe_allow_html=True)
-st.markdown('<div class="story">مقارنة تفصيلية بين الخطابات المثالية والمعيبة، رصد دقيق للعيوب الزمنية والفجوات، واستخراج درجات تقييم معيارية قابلة للتكرار بدقة عالية.</div>', unsafe_allow_html=True)
+# واجهة الهيرو الكارتونية المبهجة
+st.markdown(
+    """
+<div class="hero-card">
+    <h1>🎙️ ORATOR PULSE 🚀</h1>
+    <p>Compare ideal vs. flawed speeches, smash temporal glitches, and score your voice with cartoon power!</p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
-# المؤشرات العليا
+# مؤشرات سريعة كارتونية
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("متوسط التقييم المعياري", "82.4 / 100", "+5.2% تحسن")
+    st.metric("🏆 Rubric Score", "94 / 100", "🔥 Top Performance")
 with col2:
-    st.metric("دقة رصد العيوب الزمنية", "94.8%", "Temporal Grounding")
+    st.metric("⏱️ Temporal Grounding", "0.2s Gap", "⚡ Super Fast")
 with col3:
-    st.metric("العينات النشطة", "5 عينات", "مكتمل")
+    st.metric("🎯 Filler Words", "0 Detected", "✨ Clean Speech")
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# استبدال الجداول بكروت تفاعلية مبهجة (Cards Grid) بدون جداول نهائياً!
+st.subheader("🌟 Speech Sample Cards (Contrastive Inspector)")
+
+col_a, col_b = st.columns(2)
+
+with col_a:
+    st.markdown(
+        """
+    <div class="fun-box" style="background: #e0f2fe;">
+        <span class="badge-ideal">IDEAL SAMPLE #1</span>
+        <h3 style="margin: 0.5rem 0;">💡 Technical Pitch Master</h3>
+        <p><b>Pace:</b> 145 WPM | <b>Jitter:</b> 1.25 | <b>Gap:</b> 0.2s</p>
+        <p style="font-family: 'Patrick Hand', cursive; font-size: 1.1rem; color: #0369a1;">
+        "Optimal pace and tone with zero filler words. Crystal clear delivery!"
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+    
+    st.markdown(
+        """
+    <div class="fun-box" style="background: #fdf4ff;">
+        <span class="badge-ideal">IDEAL SAMPLE #2</span>
+        <h3 style="margin: 0.5rem 0;">🚀 Product Launch</h3>
+        <p><b>Pace:</b> 140 WPM | <b>Jitter:</b> 1.10 | <b>Gap:</b> 0.3s</p>
+        <p style="font-family: 'Patrick Hand', cursive; font-size: 1.1rem; color: #86198f;">
+        "Engaging rhythm, stable pitch, and high audience retention."
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+with col_b:
+    st.markdown(
+        """
+    <div class="fun-box" style="background: #fff1f2;">
+        <span class="badge-flawed">FLAWED SAMPLE #1</span>
+        <h3 style="margin: 0.5rem 0;">⚠️ Rushed Pitch</h3>
+        <p><b>Pace:</b> 190 WPM | <b>Jitter:</b> 2.10 | <b>Gap:</b> 1.8s</p>
+        <p style="font-family: 'Patrick Hand', cursive; font-size: 1.1rem; color: #9f1239;">
+        "Excessive speed, frequent pauses, and stuttering on key terms."
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+    <div class="fun-box" style="background: #fffbeb;">
+        <span class="badge-flawed">FLAWED SAMPLE #2</span>
+        <h3 style="margin: 0.5rem 0;">⚠️ Nervous Review</h3>
+        <p><b>Pace:</b> 110 WPM | <b>Jitter:</b> 3.40 | <b>Gap:</b> 2.5s</p>
+        <p style="font-family: 'Patrick Hand', cursive; font-size: 1.1rem; color: #92400e;">
+        "Heavy hesitation, awkward silence spikes, and low confidence tone."
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
 
 st.divider()
 
-# جدول البيانات التباينية
-st.subheader("📊 جدول البيانات التباينية (مقارنة المثالي والمعيب)")
-df = get_contrastive_data()
-st.dataframe(df, use_container_width=True)
-
-st.divider()
-
-# قسم المساعد الذكي
-st.subheader("💬 مساعد التحليل الذكي")
+# قسم الشات التفاعلي الكارتوني
+st.subheader("💬 AI Speech Coach Chat")
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "أهلاً بك! أنا مساعدك الذكي لتحليل النطق. يمكنك سؤالي عن أسباب العيوب الزمنية، مؤشرات الـ Jitter، أو معايير التقييم."}
+        {"role": "assistant", "content": "Hey there! 👋 I'm your cartoon speech coach. Ask me how to fix temporal gaps or boost your rubric score!"}
     ]
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-prompt = st.chat_input("اكتب سؤالك حول الفجوات الزمنية، سرعة الإلقاء، أو التقييم...")
-if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    query = prompt.lower()
-    if "عيوب" in query or "توقف" in query or "gap" in query:
-        response = "بناءً على التحليل الزمني (Temporal Flaw Grounding)، تظهر العينات المعيبة توقفات غير منظمة بمتوسط 1.8 ثانية وفترات تردد متكررة مقارنة بالنموذج المثالي."
-    elif "تقييم" in query or "score" in query:
-        response = "يتم احتساب درجات التقييم المعياري (Rubric Scores) عبر المطابقة التباينية مع متجهات الخطابات المثالية مع مراعاة استقرار النبرة وسرعة الكلمات في الدقيقة."
-    else:
-        response = f"تم تحليل استفسارك '{prompt}' بنجاح استناداً إلى بيانات مجموعة الاختبار. يرجى مراجعة قيم الفجوات الزمنية ومؤشرات الإلقاء في الجدول أعلاه."
-        
+user_chat = st.chat_input("Ask about speech flaws, pacing, or rubric scores...")
+if user_chat:
+    st.session_state.messages.append({"role": "user", "content": user_chat})
+    response = f"🎯 Great question! Regarding '{user_chat}', our contrastive model flags temporal gaps above 1.5s as primary flaws. Keep your pace around 140 WPM for maximum impact!"
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.rerun()
+
+<ElicitationsGroup message="Explore more cartoon features:">
+  <Elicitation label="Add interactive voice recording widget" query="How can I add an interactive live voice recording button in this cartoon style?"/>
+  <Elicitation label="Create a cartoon score breakdown radar chart" query="How can I add a fun cartoon score breakdown chart to this app?"/>
+</ElicitationsGroup>
