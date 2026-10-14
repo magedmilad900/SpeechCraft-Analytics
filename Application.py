@@ -85,17 +85,6 @@ p, li, label, input, textarea, small {
     margin: 8px 0 32px;
 }
 
-.hero::after {
-    content: "★ ✦ ●";
-    position: absolute;
-    right: 22px;
-    top: 16px;
-    color: var(--yellow);
-    font-family: 'Bangers', cursive;
-    font-size: 2rem;
-    -webkit-text-stroke: 1px var(--ink);
-}
-
 .hero h1 {
     color: white !important;
     font-size: clamp(2.5rem, 6vw, 4.3rem) !important;
